@@ -61,7 +61,7 @@ external cvc4_negate : cvc4_solver -> cvc4_expr -> cvc4_expr = "cvc4_negate"
 
 external cvc4_mk_function_type : cvc4_solver -> string -> cvc4_type list -> cvc4_type -> cvc4_fun_type = "cvc4_mk_function_type" 
 
-external cvc4_mk_function_expr : cvc4_solver -> cvc4_fun_type -> cvc4_expr list -> cvc4_expr = "cvc4_mk_function_expr" 
+external cvc4_mk_function_expr : cvc4_solver -> cvc4_expr -> cvc4_expr list -> cvc4_expr = "cvc4_mk_function_expr"
 
 external cvc4_mk_predicate_type : cvc4_solver -> string -> cvc4_type list -> cvc4_pred_type = "cvc4_mk_predicate_type" 
 
@@ -70,6 +70,8 @@ external cvc4_mk_predicate_expr : cvc4_solver -> cvc4_pred_type -> cvc4_expr lis
 external cvc4_mk_equation : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_equation" 
 
 external cvc4_mk_disj : cvc4_solver -> cvc4_expr list -> cvc4_expr = "cvc4_mk_disj" 
+
+external cvc4_mk_conj : cvc4_solver -> cvc4_expr list -> cvc4_expr = "cvc4_mk_conj"
 
 external cvc4_assert_formula : cvc4_solver -> cvc4_expr -> bool = "cvc4_assert_formula" 
 
@@ -98,6 +100,28 @@ external cvc4_expr_to_string : cvc4_expr -> string = "cvc4_expr_to_string"
 external cvc4_hash_expr : cvc4_expr -> int = "cvc4_hash_expr" 
 
 external cvc4_compare_expr : cvc4_expr -> cvc4_expr -> int = "cvc4_compare_expr" 
+
+external cvc4_mk_int : cvc4_solver -> int -> cvc4_expr = "cvc4_mk_int"
+
+external cvc4_mk_le : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_le"
+
+external cvc4_mk_lt : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_lt"
+
+external cvc4_mk_add : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_add"
+
+external cvc4_mk_sub : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_sub"
+
+external cvc4_mk_mul : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_mul"
+
+external cvc4_mk_div : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_div"
+
+external cvc4_mk_mod : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_mod"
+
+external cvc4_mk_ite : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_ite"
+
+external cvc4_mk_ftype : cvc4_solver ->  cvc4_type list -> cvc4_type -> cvc4_type = "cvc4_mk_ftype"
+
+external cvc4_clear_ctx : cvc4_solver -> unit = "cvc4_clear_ctx"
 
 let create_cvc4_solver ?(rlimit = 0) m = cvc4_create_smt_engine m rlimit 
 
@@ -128,6 +152,8 @@ let mk_predicate_expr s p a = cvc4_mk_predicate_expr s p a
 let mk_equation s l r = cvc4_mk_equation s l r 
 
 let mk_disj s c = cvc4_mk_disj s c
+
+let mk_conj s c = cvc4_mk_conj s c
 
 let assert_formula s f = cvc4_assert_formula s f
 
@@ -177,3 +203,24 @@ let hash_expr e = cvc4_hash_expr e
 
 let compare_expr e1 e2 = cvc4_compare_expr e1 e2
 
+let mk_int s n = cvc4_mk_int s n
+
+let mk_le s = cvc4_mk_le s
+
+let mk_lt s = cvc4_mk_lt s
+
+let mk_add s = cvc4_mk_add s
+
+let mk_sub s = cvc4_mk_sub s
+
+let mk_mul s = cvc4_mk_mul s
+
+let mk_div s = cvc4_mk_div s
+
+let mk_mod s = cvc4_mk_mod s
+
+let mk_ite s = cvc4_mk_ite s
+
+let mk_ftype s = cvc4_mk_ftype s
+
+let clear_ctx s = cvc4_clear_ctx s

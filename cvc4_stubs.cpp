@@ -337,7 +337,7 @@ extern "C" CAMLprim value cvc4_create_smt_engine(value models_in, value rlimit_i
     // em->setOutputLanguage(language::output::LANG_SMTLIB_V2);
 
     /* Set logic */
-    smt->setLogic("QF_UF");
+    smt->setLogic("QF_UFLIRA");
   
     /* Allocate abstract datatype with four fields for CVC4 instance */
     res = caml_alloc(4, Abstract_tag);
@@ -773,7 +773,7 @@ extern "C" CAMLprim value cvc4_negate(value solver_in, value expr_in)
 
    The list domain_in must contain at least one element
 
-   external cvc4_mk_function_type : cvc4_solver -> cvc4_type list -> cvc4_type -> cvc4_fun_type = "cvc4_mk_function_type" 
+   external cvc4_mk_function_type : cvc4_solver -> string -> cvc4_type list -> cvc4_type -> cvc4_fun_type = "cvc4_mk_function_type"
 
  */
 extern "C" CAMLprim value cvc4_mk_function_type(value solver_in, value symbol_in, value domain_in, value range_in)
@@ -1188,16 +1188,12 @@ extern "C" CAMLprim value cvc4_mk_equation(value solver_in, value lhs_in, value 
 }
 
 
-/* Create a disjunction of expressions
-
-   external cvc4_mk_disj : cvc4_solver -> cvc4_expr list -> cvc4_expr = "cvc4_mk_disj" 
-
- */
-extern "C" CAMLprim value cvc4_mk_disj(value solver_in, value expr_list_in)
+/* create a disjunction or a conjunction */
+extern "C" CAMLprim value cvc4_mk_conj_disj(bool disj, value solver_in, value expr_list_in)
 {
   
 #ifdef DEBUG
-  std::cerr << "cvc4_mk_disj" << std::endl;
+  std::cerr << disj? "cvc4_mk_disj" : "cvc4_mk_conj"  << std::endl;
 #endif
   
   /* Declare parameters */
@@ -1215,7 +1211,7 @@ extern "C" CAMLprim value cvc4_mk_disj(value solver_in, value expr_list_in)
   /* Empty vector for list of expressions */
   std::vector<Expr> c;
   
-  /* An expression in the disjunction */
+  /* An expression in the disjunction/conjunction */
   Expr* expr;
 
   /* Set to head of list */
@@ -1239,8 +1235,8 @@ extern "C" CAMLprim value cvc4_mk_disj(value solver_in, value expr_list_in)
 
   try {
     
-    /* Create a disjunction */
-    Expr expr = em->mkExpr(kind::OR, c);
+    /* Create a disjunction/conjunction */
+    Expr expr = em->mkExpr(disj? kind::OR : kind::AND, c);
     
     /* Copy expression into an OCaml value */
     res = copy_cvc4_expr(expr);
@@ -1255,6 +1251,28 @@ extern "C" CAMLprim value cvc4_mk_disj(value solver_in, value expr_list_in)
     
   }
 
+}
+
+
+/* Create a disjunction of expressions
+
+   external cvc4_mk_disj : cvc4_solver -> cvc4_expr list -> cvc4_expr = "cvc4_mk_disj"
+
+ */
+extern "C" CAMLprim value cvc4_mk_disj(value solver_in, value expr_list_in)
+{
+  cvc4_mk_conj_disj(true, solver_in, expr_list_in);
+}
+
+
+/* Create a conjunction of expressions
+
+   external cvc4_mk_conj : cvc4_solver -> cvc4_expr list -> cvc4_expr = "cvc4_mk_conj"
+
+ */
+extern "C" CAMLprim value cvc4_mk_conj(value solver_in, value expr_list_in)
+{
+  cvc4_mk_conj_disj(false, solver_in, expr_list_in);
 }
 
 
@@ -2056,3 +2074,423 @@ extern "C" CAMLprim value cvc4_compare_expr(value expr1_in, value expr2_in)
 }
 
 
+/* Create an integer value
+
+   external cvc4_mk_int : cvc4_solver -> int -> cvc4_expr = "cvc4_mk_int"
+
+ */
+extern "C" CAMLprim value cvc4_mk_int(value solver_in, value n)
+{
+
+#ifdef DEBUG
+  std::cerr << "cvc4_mk_int" << std::endl;
+#endif
+
+  /* Declare parameters */
+  CAMLparam2 (solver_in, n);
+
+  /* Allocate for a custom datatype for expression */
+  CAMLlocal1 (res);
+
+  /* Get expresssion mananger */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  try {
+    Expr expr = em->mkConst(Rational(Int_val(n)));
+
+    /* Copy expression into an OCaml value */
+    res = copy_cvc4_expr(expr);
+
+    /* Return type */
+    CAMLreturn(res);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+}
+
+
+/* Create integer comparison <=
+
+   external cvc4_mk_le : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_le"
+
+ */
+extern "C" CAMLprim value cvc4_mk_le(value solver_in, value lhs_in, value rhs_in)
+{
+
+#ifdef DEBUG
+  std::cerr << "cvc4_mk_le" << std::endl;
+#endif
+
+  /* Declare parameters */
+  CAMLparam3 (solver_in, lhs_in, rhs_in);
+
+  /* Allocate for result */
+  CAMLlocal1 (res);
+
+  /* Get CVC4 expression from value */
+  Expr* l = cvc4_expr_val(lhs_in);
+
+  /* Get CVC4 expression from value */
+  Expr* r = cvc4_expr_val(rhs_in);
+
+  /* Get expresssion mananger and SMT engine */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  try {
+
+    /* Create an equation */
+    Expr expr = em->mkExpr(kind::LEQ, *l, *r);
+
+    /* Copy expression into an OCaml value */
+    res = copy_cvc4_expr(expr);
+
+    /* Return type */
+    CAMLreturn(res);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+
+}
+
+
+
+/* Create integer comparison <
+
+   external cvc4_mk_lt : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_lt"
+
+ */
+extern "C" CAMLprim value cvc4_mk_lt(value solver_in, value lhs_in, value rhs_in)
+{
+
+#ifdef DEBUG
+  std::cerr << "cvc4_mk_lt" << std::endl;
+#endif
+
+  /* Declare parameters */
+  CAMLparam3 (solver_in, lhs_in, rhs_in);
+
+  /* Allocate for result */
+  CAMLlocal1 (res);
+
+  /* Get CVC4 expression from value */
+  Expr* l = cvc4_expr_val(lhs_in);
+
+  /* Get CVC4 expression from value */
+  Expr* r = cvc4_expr_val(rhs_in);
+
+  /* Get expresssion mananger and SMT engine */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  try {
+
+    /* Create an equation */
+    Expr expr = em->mkExpr(kind::LT, *l, *r);
+
+    /* Copy expression into an OCaml value */
+    res = copy_cvc4_expr(expr);
+
+    /* Return type */
+    CAMLreturn(res);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+
+}
+
+
+
+enum Binop { plus, minus, mult, quot, rem };
+
+
+/* Create binary integer operations */
+extern "C" CAMLprim value cvc4_mk_binop(value solver_in, value lhs_in, value rhs_in, Binop op)
+{
+
+  /* Declare parameters */
+  CAMLparam3 (solver_in, lhs_in, rhs_in);
+
+  /* Allocate for result */
+  CAMLlocal1 (res);
+
+  /* Get CVC4 expression from value */
+  Expr* l = cvc4_expr_val(lhs_in);
+
+  /* Get CVC4 expression from value */
+  Expr* r = cvc4_expr_val(rhs_in);
+
+  /* Get expresssion mananger and SMT engine */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  try {
+
+    /* Create an equation */
+
+    Kind k;
+    switch (op) {
+    case plus  : k = kind::PLUS; break;
+    case minus : k = kind::MINUS; break;
+    case mult  : k = kind::MULT; break;
+    case quot  : k = kind::INTS_DIVISION; break;
+    case rem   : k = kind::INTS_MODULUS; break;
+    }
+
+    Expr expr = em->mkExpr(k, *l, *r);
+
+    /* Copy expression into an OCaml value */
+    res = copy_cvc4_expr(expr);
+
+    /* Return type */
+    CAMLreturn(res);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+
+}
+
+
+/* Create integer addition
+
+   external cvc4_mk_add : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_add"
+
+ */
+extern "C" CAMLprim value cvc4_mk_add(value solver_in, value lhs_in, value rhs_in)
+{
+  cvc4_mk_binop(solver_in, lhs_in, rhs_in, plus);
+}
+
+
+/* Create integer subtraction
+
+   external cvc4_mk_sub : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_sub"
+
+ */
+extern "C" CAMLprim value cvc4_mk_sub(value solver_in, value lhs_in, value rhs_in)
+{
+  cvc4_mk_binop(solver_in, lhs_in, rhs_in, minus);
+}
+
+
+/* Create integer multiplication
+
+   external cvc4_mk_mul : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_mul"
+
+ */
+extern "C" CAMLprim value cvc4_mk_mul(value solver_in, value lhs_in, value rhs_in)
+{
+  cvc4_mk_binop(solver_in, lhs_in, rhs_in, mult);
+}
+
+
+/* Create integer division
+
+   external cvc4_mk_div : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_div"
+
+ */
+extern "C" CAMLprim value cvc4_mk_div(value solver_in, value lhs_in, value rhs_in)
+{
+  cvc4_mk_binop(solver_in, lhs_in, rhs_in, quot);
+}
+
+
+/* Create integer modulo
+
+   external cvc4_mk_mod : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_mod"
+
+ */
+extern "C" CAMLprim value cvc4_mk_mod(value solver_in, value lhs_in, value rhs_in)
+{
+  cvc4_mk_binop(solver_in, lhs_in, rhs_in, rem);
+}
+
+
+/* Create an if-the-else expression
+
+   The fist parameter should be of boolean type and the two branches of the same type
+
+   external cvc4_mk_ite : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr -> cvc4_expr = "cvc4_mk_ite"
+
+ */
+extern "C" CAMLprim value cvc4_mk_ite(value solver_in, value expr_cond, value expr_if, value expr_else)
+{
+
+#ifdef DEBUG
+  std::cerr << "cvc4_mk_ite" << std::endl;
+#endif
+
+  /* Declare parameters */
+  CAMLparam4 (solver_in, expr_cond, expr_if, expr_else);
+
+  /* Allocate for result */
+  CAMLlocal1 (res);
+
+  /* Get expresssion mananger */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  /* Get CVC4 expressions from values */
+  Expr* ec = cvc4_expr_val(expr_cond);
+  Expr* e1 = cvc4_expr_val(expr_if);
+  Expr* e2 = cvc4_expr_val(expr_else);
+
+  try {
+
+    /* Get expression from expression manager */
+    Expr expr = em->mkExpr(kind::ITE, *ec, *e1, *e2);
+
+    /* Copy expression into an OCaml value */
+    res = copy_cvc4_expr(expr);
+
+    /* Return type */
+    CAMLreturn(res);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+}
+
+
+/* Create an anonymous function type
+
+   The list domain_in must contain at least one element
+
+   external cvc4_mk_ftype : cvc4_solver -> cvc4_type list -> cvc4_type -> cvc4_type = "cvc4_mk_ftype" 
+
+ */
+extern "C" CAMLprim value cvc4_mk_ftype(value solver_in, value domain_in, value range_in)
+{
+
+#ifdef DEBUG
+  std::cerr << "cvc4_mk_ftype" << std::endl;
+#endif
+
+  /* Declare parameters */
+  CAMLparam3 (solver_in, domain_in, range_in);
+
+  /* Allocate for result */
+  CAMLlocal1 (res);
+
+  /* Allocate for local variables */
+  CAMLlocal2 (head, type_in);
+
+  /* Get expresssion mananger */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  try {
+
+      /* Empty vector for list of domain types */
+      std::vector<Type> domain;
+
+      /* A type in the domain */
+      Type* type;
+
+      /* Set to head of list */
+      head = domain_in;
+
+      /* Iterate list of types */
+      while (head != Val_emptylist)
+	{
+
+	  /* Get element at head of list */
+	  type_in = Field(head, 0);
+	  type = cvc4_type_val(type_in);
+
+	  /* Push type at head of list to end of vector */
+	  domain.push_back(Type(*type));
+
+	  /* Continue with tail of list */
+	  head = Field(head, 1);
+
+	}
+
+      /* Get CVC4 expression from value */
+      Type* range = cvc4_type_val(range_in);
+
+      /* Create type of function */
+      Type funType = Type(em->mkFunctionType(domain, *range));
+
+
+      /* Copy type into an OCaml value */
+      res = copy_cvc4_type(funType);
+
+      /* Return type */
+      CAMLreturn(res);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+
+}
+
+
+/* Clear the solver context (assertions) by creating a new smt engine
+
+   external cvc4_clear_ctx : cvc4_solver -> unit = "cvc4_clear_ctx"
+
+ */
+extern "C" CAMLprim value cvc4_clear_ctx(value solver_in)
+{
+
+#ifdef DEBUG
+  std::cerr << "cvc4_clear_ctx";
+#endif
+
+  /* Declare parameters */
+  CAMLparam1 (solver_in);
+
+  /* Get expresssion mananger */
+  ExprManager* em = (ExprManager*) Field(solver_in, em_field);
+
+  /* Get SMT engine */
+  SmtEngine* smt = (SmtEngine*) Field(solver_in, smt_field);
+
+  try {
+    // Backup smt options
+    // how to get the 'setResourceLimit' parameter?
+    SExpr produce_model_bak = smt->getOption("produce-models");
+
+    delete smt;
+
+    /* Create new CVC4 instance */
+    SmtEngine* newsmt = new SmtEngine(em);
+
+    // restore smt parameters, cf. cvc4_create_smt_engine()
+    newsmt->setOption("incremental", SExpr("true"));
+    newsmt->setOption("produce-models", produce_model_bak);
+    newsmt->setResourceLimit(0); // TODO
+    newsmt->setLogic("QF_UFLIRA");
+
+    /* Link to the new smt engine */
+    Store_field(solver_in, smt_field, (value) newsmt);
+
+    /* Return true */
+    CAMLreturn(Val_unit);
+
+  } catch(Exception& e) {
+
+    /* Throw OCaml exception */
+    caml_failwith(e.what());
+
+  }
+
+}

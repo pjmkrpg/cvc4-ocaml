@@ -89,6 +89,9 @@ val get_bool_type : cvc4_solver -> cvc4_type
     uninterpreted type of the given name *)
 val mk_type : cvc4_solver -> string -> cvc4_type
 
+(** Create an anonymous uninterpreted function type *)
+val mk_ftype : cvc4_solver -> cvc4_type list -> cvc4_type -> cvc4_type
+
 
 (** {1 Solver expressions} *)
 
@@ -122,7 +125,7 @@ val negate : cvc4_solver -> cvc4_expr -> cvc4_expr
 val mk_function_type : cvc4_solver -> string -> cvc4_type list -> cvc4_type -> cvc4_fun_type
 
 (** Create an uninterpreted function application *)
-val mk_function_expr : cvc4_solver -> cvc4_fun_type -> cvc4_expr list -> cvc4_expr
+val mk_function_expr : cvc4_solver -> cvc4_expr -> cvc4_expr list -> cvc4_expr
 
 (** Create an uninterpreted predicate symbol of the given type or
     return the previously created uninterpreted predicate symbol of the
@@ -143,6 +146,29 @@ val mk_equation : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
 (** Create a disjunction between expressions *)
 val mk_disj : cvc4_solver -> cvc4_expr list -> cvc4_expr
 
+(** Create a conjunction between expressions *)
+val mk_conj : cvc4_solver -> cvc4_expr list -> cvc4_expr
+
+(** Create an integer constant  *)
+val mk_int : cvc4_solver -> int -> cvc4_expr
+
+(** Create integer binary inequalities *)
+val mk_le : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+val mk_lt : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+
+(** Create integer binary operations  *)
+val mk_add : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+val mk_sub : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+val mk_mul : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+val mk_div : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+val mk_mod : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr
+
+(** Create an if-then-else expression, the fist argument should be
+    of boolean type and the two branches of the same type *)
+val mk_ite : cvc4_solver -> cvc4_expr -> cvc4_expr -> cvc4_expr -> cvc4_expr
+
+
+
 (** {1 Logical contexts} *)
 
 (** Assert the expression in the context *)
@@ -154,6 +180,10 @@ val check_sat : cvc4_solver -> cvc4_sat_result
 (** Check validity of the expression in the context by asserting its
     negation and checking the context for satisfiability *)
 val query : cvc4_solver -> cvc4_expr -> cvc4_validity_result
+
+(** Remove hypothesis from the context (by creating a new one)
+    keeping the symbol table *)
+val clear_ctx : cvc4_solver -> unit
 
 (** Return the Boolean value of the expression in the context
 
